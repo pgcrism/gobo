@@ -44,6 +44,7 @@ feature {NONE} -- Initialization
 		local
 			max: INTEGER
 			equiv_classes: detachable LX_EQUIVALENCE_CLASSES
+			l_yy_ec: ARRAY [INTEGER]
 		do
 			if attached a_description.input_filename as l_input_filename then
 				input_filename := l_input_filename
@@ -68,8 +69,9 @@ feature {NONE} -- Initialization
 			max := characters_count
 			equiv_classes := a_description.equiv_classes
 			if equiv_classes /= Void and then equiv_classes.built then
-				yy_ec := equiv_classes.to_array (0, max)
-				yyNull_equiv_class := yy_ec.item (max)
+				l_yy_ec := equiv_classes.to_array (0, max)
+				yy_ec := l_yy_ec
+				yyNull_equiv_class := l_yy_ec.item (max)
 				max := equiv_classes.count
 			else
 				yyNull_equiv_class := max
@@ -691,6 +693,15 @@ feature {NONE} -- Generation
 			a_file.put_character ('%T')
 			a_file.put_string (a_name)
 			a_file.put_string (": SPECIAL [INTEGER]%N")
+			if a_name.ends_with ("_template") then
+				a_file.put_string ("%T%T%T-- Template for `")
+				a_file.put_string (a_name.substring (1, a_name.count - 9))
+				a_file.put_string ("%'%N")
+			else
+				a_file.put_string ("%T%T%T-- `")
+				a_file.put_string (a_name)
+				a_file.put_string ("%'%N")
+			end
 			if array_size = 0 then
 				nb := 1
 			else
@@ -823,21 +834,21 @@ feature {NONE} -- Generation
 			nb := characters_count
 			transitions := a_state.transitions
 			create has_transition.make_filled (False, 0, nb - 1)
-			if yy_ec /= Void then
+			if attached yy_ec as l_yy_ec then
 					-- Equivalence classes are used.
 				from
 					i := 1
 				until
 					i >= nb
 				loop
-					j := yy_ec.item (i)
+					j := l_yy_ec.item (i)
 					if transitions.valid_label (j) then
 						has_transition.put (transitions.target (j) /= Void, i)
 					end
 					i := i + 1
 				end
 					-- Null transition.
-				j := yy_ec.item (nb)
+				j := l_yy_ec.item (nb)
 				if transitions.valid_label (j) then
 					has_transition.put (transitions.target (j) /= Void, 0)
 				end
